@@ -12,6 +12,7 @@ mod test_readme {
     #![doc = include_str!("../README.md")]
 }
 
+use itertools::Itertools;
 use std::fmt::{self, Write};
 
 //======================================
@@ -213,7 +214,7 @@ fn build_table_of_contents_markdown(
     // Recurse to write subcommands
     //----------------------------------
 
-    for subcommand in command.get_subcommands() {
+    for subcommand in command.get_subcommands().sorted_by_key(|c| c.get_name()) {
         build_table_of_contents_markdown(
             buffer,
             command_path.clone(),
@@ -356,7 +357,7 @@ fn build_command_markdown(
     if command.get_subcommands().next().is_some() {
         writeln!(buffer, "###### **Subcommands:**\n")?;
 
-        for subcommand in command.get_subcommands() {
+        for subcommand in command.get_subcommands().sorted_by_key(|c| c.get_name()) {
             if subcommand.is_hide_set() {
                 continue;
             }
@@ -395,6 +396,7 @@ fn build_command_markdown(
     let non_pos: Vec<_> = command
         .get_arguments()
         .filter(|arg| !arg.is_positional() && !arg.is_hide_set())
+        .sorted_by_key(|arg| sort_key(arg))
         .collect();
 
     if !non_pos.is_empty() {
@@ -415,7 +417,7 @@ fn build_command_markdown(
     // anyone reading the source .md file.
     write!(buffer, "\n\n")?;
 
-    for subcommand in command.get_subcommands() {
+    for subcommand in command.get_subcommands().sorted_by_key(|c| c.get_name()) {
         build_command_markdown(
             buffer,
             command_path.clone(),
@@ -425,6 +427,17 @@ fn build_command_markdown(
     }
 
     Ok(())
+}
+
+fn sort_key(arg: &clap::Arg) -> String {
+    if let Some(c) = arg.get_short() {
+        c.to_string()
+    } else if let Some(opt) = arg.get_long() {
+        opt.to_string()
+    } else {
+        // shouldn't happen because this is only called for non-positionals
+        "zzzzzzzzzzz".to_string()
+    }
 }
 
 fn write_arg_markdown(buffer: &mut String, arg: &clap::Arg) -> fmt::Result {
