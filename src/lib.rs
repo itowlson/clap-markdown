@@ -14,8 +14,6 @@ mod test_readme {
 
 use std::fmt::{self, Write};
 
-use clap::builder::PossibleValue;
-
 //======================================
 // Public API types
 //======================================
@@ -435,7 +433,7 @@ fn write_arg_markdown(buffer: &mut String, arg: &clap::Arg) -> fmt::Result {
 
     let value_name: String = match arg.get_value_names() {
         // TODO: What if multiple names are provided?
-        Some([name, ..]) => name.as_str().to_owned(),
+        Some([name, ..]) => name.to_string(),
         Some([]) => unreachable!(
             "clap Arg::get_value_names() returned Some(..) of empty list"
         ),
@@ -505,11 +503,12 @@ fn write_arg_markdown(buffer: &mut String, arg: &clap::Arg) -> fmt::Result {
     // Arg possible values
     //--------------------
 
-    let possible_values: Vec<PossibleValue> = arg
+    let possible_values = arg
         .get_possible_values()
+        .unwrap_or_default()
         .into_iter()
         .filter(|pv| !pv.is_hide_set())
-        .collect();
+        .collect::<Vec<_>>();
 
     // Print possible values for options that take a value, but not for flags
     // that can only be either present or absent and do not take a value.
